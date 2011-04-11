@@ -1,0 +1,84 @@
+#!/bin/sh -e
+
+if [ -r "/etc/isc-dnsdb-query.conf" ]; then
+    . /etc/isc-dnsdb-query.conf
+fi
+
+if [ -r "$HOME/.isc-dnsdb-query.conf" ]; then
+    . $HOME/.isc-dnsdb-query.conf
+fi
+
+if [ -z "$APIKEY" ]; then
+    echo "$(basename $0): APIKEY not defined in /etc/isc-dnsdb-query.conf or $HOME/.isc-dnsdb-query.conf"
+    exit 1
+fi
+
+if [ -z "$DNSDB_SERVER" ]; then
+    DNSDB_SERVER="https://dnsdb-api.isc.org"
+fi
+
+if [ -z "$CURL" ]; then
+    CURL="curl"
+fi
+
+if [ -z "$DNSDB_FORMAT" ]; then
+    DNSDB_FORMAT="text"
+fi
+
+case "$DNSDB_FORMAT" in
+    json)
+        ACCEPT="application/json"
+        ;;
+    text)
+        ACCEPT="text/plain"
+        ;;
+    *)
+        echo "$(basename $0): unknown value for DNSDB_FORMAT: $DNSDB_FORMAT"
+        exit 1
+esac
+
+DNSDB_RRSET_LOOKUP="${DNSDB_SERVER}/lookup/rrset"
+DNSDB_RDATA_LOOKUP="${DNSDB_SERVER}/lookup/rdata"
+
+usage() {
+    echo "Usage: $(basename $0) rrset <ONAME>[/<RRTYPE>[/<BAILIWICK>]]"
+    echo "Usage: $(basename $0) rdata ip <IPADDRESS>"
+    echo "Usage: $(basename $0) rdata name <NAME>[/<RRTYPE>]"
+    echo "Usage: $(basename $0) rdata raw <HEX>[/<RRTYPE>]"
+    exit 1
+}
+
+case "$1" in
+    rrset)
+        oname="$2"
+        if [ -z "$oname" ]; then
+            usage
+        fi
+        $CURL -Ss -H "X-API-Key: ${APIKEY}" -H "Accept: ${ACCEPT}" ${DNSDB_RRSET_LOOKUP}/name/$oname
+        ;;
+
+    rdata)
+        lookup_type="$2"
+        rdata="$3"
+        if [ -z "$lookup_type" -o -z "$rdata" ]; then
+            usage
+        fi
+        case "$lookup_type" in
+            ip)
+                rdata="$(echo $rdata | sed -e 's#/#,#')"
+                ;;
+        esac
+        case "$lookup_type" in
+            ip|name|raw)
+                $CURL -Ss -H "X-API-Key: ${APIKEY}" -H "Accept: ${ACCEPT}" ${DNSDB_RDATA_LOOKUP}/$lookup_type/$rdata
+                ;;
+            *)
+                usage
+                ;;
+        esac
+        ;;
+
+    *)
+        usage
+        ;;
+esac
