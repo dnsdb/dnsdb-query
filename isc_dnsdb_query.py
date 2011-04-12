@@ -1,0 +1,160 @@
+#!/usr/bin/env python
+
+import json
+import optparse
+import os
+import sys
+import time
+import urllib2
+from cStringIO import StringIO
+
+DEFAULT_CONFIG_FILE = '/etc/isc-dnsdb-query.conf'
+DEFAULT_DNSDB_SERVER = 'https://dnsdb-api.isc.org'
+
+cfg = None
+options = None
+
+class DnsdbClient(object):
+    def __init__(self, server, apikey):
+        self.server = server
+        self.apikey = apikey
+
+    def query_rrset(self, oname, rrtype=None, bailiwick=None):
+        if bailiwick:
+            if not rrtype:
+                rrtype = 'ANY'
+            path = 'rrset/name/%s/%s/%s' % (oname, rrtype, bailiwick)
+        elif rrtype:
+            path = 'rrset/name/%s/%s' % (oname, rrtype)
+        else:
+            path = 'rrset/name/%s' % oname
+        return self._query(path)
+
+    def query_rdata_name(self, rdata_name, rrtype=None):
+        if rrtype:
+            path = 'rdata/name/%s/%s' % (rdata_name, rrtype)
+        else:
+            path = 'rdata/name/%s' % rdata_name
+        return self._query(path)
+
+    def query_rdata_ip(self, rdata_ip):
+        path = 'rdata/ip/%s' % rdata_ip.replace('/', ',')
+        return self._query(path)
+
+    def _query(self, path):
+        res = []
+        req = urllib2.Request('%s/lookup/%s' % (self.server, path))
+        req.add_header('Accept', 'application/json')
+        req.add_header('X-Api-Key', self.apikey)
+        http = urllib2.urlopen(req)
+        while True:
+            line = http.readline()
+            if not line:
+                break
+            res.append(json.loads(line))
+        return res
+
+def sec_to_text(ts):
+    return time.strftime('%Y-%m-%d %H:%M:%S -0000', time.gmtime(ts))
+
+def rrset_to_text(m):
+    s = StringIO()
+
+    if 'bailiwick' in m:
+        s.write(';;  bailiwick: %s\n' % m['bailiwick'])
+
+    if 'count' in m:
+        s.write(';;      count: %s\n' % m['count'])
+
+    if 'time_first' in m:
+        s.write(';; first seen: %s\n' % sec_to_text(m['time_first']))
+    if 'time_last' in m:
+        s.write(';;  last seen: %s\n' % sec_to_text(m['time_last']))
+
+    if 'zone_time_first' in m:
+        s.write(';; first seen in zone file: %s\n' % sec_to_text(m['zone_time_first']))
+    if 'zone_time_last' in m:
+        s.write(';;  last seen in zone file: %s\n' % sec_to_text(m['zone_time_last']))
+
+    if 'rdata' in m:
+        for rdata in m['rdata']:
+            s.write('%s IN %s %s\n' % (m['rrname'], m['rrtype'], rdata))
+
+    s.seek(0)
+    return s.read()
+
+def rdata_to_text(m):
+    return '%s IN %s %s' % (m['rrname'], m['rrtype'], m['rdata'])
+
+def parse_config(cfg_fname):
+    config = {}
+    for fname in (os.path.expanduser('~/.isc-dnsdb-query.conf'), cfg_fname):
+        if not os.path.isfile(fname):
+            continue
+        for line in open(fname):
+            key, eq, val = line.strip().partition('=')
+            val = val.strip('"')
+            config[key] = val
+        return config
+    sys.stderr.write('isc_dnsdb_query: unable to open config file\n')
+    sys.exit(1)
+
+def main():
+    global cfg
+    global options
+
+    parser = optparse.OptionParser()
+    parser.add_option('-c', '--config', dest='config', type='string',
+        help='config file', default=DEFAULT_CONFIG_FILE)
+    parser.add_option('-r', '--rrset', dest='rrset', type='string',
+        help='rrset <ONAME>[/<RRTYPE>[/BAILIWICK]]')
+    parser.add_option('-n', '--rdataname', dest='rdata_name', type='string',
+        help='rdata name <NAME>[/<RRTYPE>]')
+    parser.add_option('-i', '--rdataip', dest='rdata_ip', type='string',
+        help='rdata ip <IPADDRESS|IPRANGE|IPNETWORK>')
+    parser.add_option('-s', '--sort', dest='sort', type='string', help='sort key')
+    parser.add_option('-R', '--reverse', dest='reverse', action='store_true', default=False,
+        help='reverse sort')
+
+    options, args = parser.parse_args()
+    if args:
+        parser.print_help()
+        sys.exit(1)
+
+    cfg = parse_config(options.config)
+
+    if not 'DNSDB_SERVER' in cfg:
+        cfg['DNSDB_SERVER'] = DEFAULT_DNSDB_SERVER
+    if not 'APIKEY' in cfg:
+        sys.stderr.write('isc_dnsdb_query: APIKEY not defined in config file\n')
+        sys.exit(1)
+
+    client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'])
+    if options.rrset:
+        res_list = client.query_rrset(*options.rrset.split('/'))
+        fmt_func = rrset_to_text
+    elif options.rdata_name:
+        res_list = client.query_rdata_name(*options.rdata_name.split('/'))
+        fmt_func = rdata_to_text
+    elif options.rdata_ip:
+        res_list = client.query_rdata_ip(options.rdata_ip)
+        fmt_func = rdata_to_text
+    else:
+        parser.print_help()
+        sys.exit(1)
+
+    if len(res_list) > 0:
+        if options.sort:
+            if not options.sort in res_list[0]:
+                sort_keys = res_list[0].keys()
+                sort_keys.sort()
+                sys.stderr.write('isc_dnsdb_query: invalid sort key "%s". valid sort keys are %s\n' % (options.sort, ', '.join(sort_keys)))
+                sys.exit(1)
+            res_list.sort(key=lambda r: r[options.sort], reverse=options.reverse)
+
+    for res in res_list:
+        sys.stdout.write(fmt_func(res))
+        sys.stdout.write('\n')
+
+if __name__ == '__main__':
+    main()
