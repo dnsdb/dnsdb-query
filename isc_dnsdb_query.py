@@ -46,12 +46,18 @@ class DnsdbClient(object):
         req = urllib2.Request('%s/lookup/%s' % (self.server, path))
         req.add_header('Accept', 'application/json')
         req.add_header('X-Api-Key', self.apikey)
-        http = urllib2.urlopen(req)
-        while True:
-            line = http.readline()
-            if not line:
-                break
-            res.append(json.loads(line))
+        try:
+            http = urllib2.urlopen(req)
+            while True:
+                line = http.readline()
+                if not line:
+                    break
+                if options.json:
+                    res.append(line)
+                else:
+                    res.append(json.loads(line))
+        except urllib2.HTTPError, e:
+            sys.stderr.write(str(e) + '\n')
         return res
 
 def sec_to_text(ts):
@@ -115,6 +121,8 @@ def main():
     parser.add_option('-s', '--sort', dest='sort', type='string', help='sort key')
     parser.add_option('-R', '--reverse', dest='reverse', action='store_true', default=False,
         help='reverse sort')
+    parser.add_option('-j', '--json', dest='json', action='store_true', default=False,
+        help='output in JSON format')
 
     options, args = parser.parse_args()
     if args:
@@ -143,6 +151,9 @@ def main():
         parser.print_help()
         sys.exit(1)
 
+    if options.json:
+        fmt_func = lambda x: x
+
     if len(res_list) > 0:
         if options.sort:
             if not options.sort in res_list[0]:
@@ -154,7 +165,8 @@ def main():
 
     for res in res_list:
         sys.stdout.write(fmt_func(res))
-        sys.stdout.write('\n')
+        if not options.json:
+            sys.stdout.write('\n')
 
 if __name__ == '__main__':
     main()
