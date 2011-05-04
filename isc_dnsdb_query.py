@@ -43,7 +43,10 @@ class DnsdbClient(object):
 
     def _query(self, path):
         res = []
-        req = urllib2.Request('%s/lookup/%s' % (self.server, path))
+        url = '%s/lookup/%s' % (self.server, path)
+        if options.limit:
+            url += '?limit=%d' % options.limit
+        req = urllib2.Request(url)
         req.add_header('Accept', 'application/json')
         req.add_header('X-Api-Key', self.apikey)
         try:
@@ -123,6 +126,8 @@ def main():
         help='reverse sort')
     parser.add_option('-j', '--json', dest='json', action='store_true', default=False,
         help='output in JSON format')
+    parser.add_option('-l', '--limit', dest='limit', type='int', default=0,
+        help='limit number of results')
 
     options, args = parser.parse_args()
     if args:
