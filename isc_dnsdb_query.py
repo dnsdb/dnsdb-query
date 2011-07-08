@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import locale
 import json
 import optparse
 import os
@@ -13,6 +14,8 @@ DEFAULT_DNSDB_SERVER = 'https://dnsdb-api.isc.org'
 
 cfg = None
 options = None
+
+locale.setlocale(locale.LC_ALL, '')
 
 class DnsdbClient(object):
     def __init__(self, server, apikey):
@@ -73,7 +76,7 @@ def rrset_to_text(m):
         s.write(';;  bailiwick: %s\n' % m['bailiwick'])
 
     if 'count' in m:
-        s.write(';;      count: %s\n' % m['count'])
+        s.write(';;      count: %s\n' % locale.format('%d', m['count'], True))
 
     if 'time_first' in m:
         s.write(';; first seen: %s\n' % sec_to_text(m['time_first']))
