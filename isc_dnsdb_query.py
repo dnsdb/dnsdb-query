@@ -100,7 +100,7 @@ def rdata_to_text(m):
 
 def parse_config(cfg_fname):
     config = {}
-    for fname in (os.path.expanduser('~/.isc-dnsdb-query.conf'), cfg_fname):
+    for fname in (cfg_fname, os.path.expanduser('~/.isc-dnsdb-query.conf')):
         if not os.path.isfile(fname):
             continue
         for line in open(fname):
