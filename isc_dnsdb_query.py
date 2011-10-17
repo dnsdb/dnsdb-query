@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import calendar
 import locale
 import json
 import optparse
@@ -111,6 +112,57 @@ def parse_config(cfg_fname):
     sys.stderr.write('isc_dnsdb_query: unable to open config file\n')
     sys.exit(1)
 
+def time_parse(s):
+    try:
+        epoch = int(s)
+        return epoch
+    except ValueError:
+        pass
+
+    try:
+        epoch = int(calendar.timegm(time.strptime(s, '%Y-%m-%d')))
+        return epoch
+    except ValueError:
+        pass
+
+    try:
+        epoch = int(calendar.timegm(time.strptime(s, '%Y-%m-%d %H:%M:%S')))
+        return epoch
+    except ValueError:
+        pass
+
+def filter_before(res_list, before_time):
+    before_time = time_parse(before_time)
+    new_res_list = []
+
+    for res in res_list:
+        if 'time_first' in res:
+            if res['time_first'] < before_time:
+                new_res_list.append(res)
+        elif 'zone_time_first' in res:
+            if res['zone_time_first'] < before_time:
+                new_res_list.append(res)
+        else:
+            new_res_list.append(res)
+
+    return new_res_list
+
+def filter_after(res_list, after_time):
+    after_time = time_parse(after_time)
+    new_res_list = []
+
+    for res in res_list:
+        if 'time_last' in res:
+            if res['time_last'] > after_time:
+                new_res_list.append(res)
+        elif 'zone_time_last' in res:
+            if res['zone_time_last'] > after_time:
+                new_res_list.append(res)
+        else:
+            new_res_list.append(res)
+
+    return new_res_list
+
 def main():
     global cfg
     global options
@@ -131,6 +183,9 @@ def main():
         help='output in JSON format')
     parser.add_option('-l', '--limit', dest='limit', type='int', default=0,
         help='limit number of results')
+
+    parser.add_option('', '--before', dest='before', type='string', help='only output results seen before this time')
+    parser.add_option('', '--after', dest='after', type='string', help='only output results seen after this time')
 
     options, args = parser.parse_args()
     if args:
@@ -170,6 +225,10 @@ def main():
                 sys.stderr.write('isc_dnsdb_query: invalid sort key "%s". valid sort keys are %s\n' % (options.sort, ', '.join(sort_keys)))
                 sys.exit(1)
             res_list.sort(key=lambda r: r[options.sort], reverse=options.reverse)
+        if options.before:
+            res_list = filter_before(res_list, options.before)
+        if options.after:
+            res_list = filter_after(res_list, options.after)
 
     for res in res_list:
         sys.stdout.write(fmt_func(res))
