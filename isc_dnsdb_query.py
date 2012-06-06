@@ -23,9 +23,11 @@ options = None
 locale.setlocale(locale.LC_ALL, '')
 
 class DnsdbClient(object):
-    def __init__(self, server, apikey):
+    def __init__(self, server, apikey, limit=None, json=False):
         self.server = server
         self.apikey = apikey
+        self.limit = limit
+        self.json = json
 
     def query_rrset(self, oname, rrtype=None, bailiwick=None):
         if bailiwick:
@@ -52,8 +54,8 @@ class DnsdbClient(object):
     def _query(self, path):
         res = []
         url = '%s/lookup/%s' % (self.server, path)
-        if options.limit:
-            url += '?limit=%d' % options.limit
+        if self.limit:
+            url += '?limit=%d' % self.limit
         req = urllib2.Request(url)
         req.add_header('Accept', 'application/json')
         req.add_header('X-Api-Key', self.apikey)
@@ -63,7 +65,7 @@ class DnsdbClient(object):
                 line = http.readline()
                 if not line:
                     break
-                if options.json:
+                if self.json:
                     res.append(line)
                 else:
                     res.append(json.loads(line))
@@ -204,7 +206,7 @@ def main():
         sys.stderr.write('isc_dnsdb_query: APIKEY not defined in config file\n')
         sys.exit(1)
 
-    client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'])
+    client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'], options.limit, options.json)
     if options.rrset:
         res_list = client.query_rrset(*options.rrset.split('/'))
         fmt_func = rrset_to_text
