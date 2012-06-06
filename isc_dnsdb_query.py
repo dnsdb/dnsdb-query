@@ -2,13 +2,17 @@
 
 import calendar
 import locale
-import json
 import optparse
 import os
 import sys
 import time
 import urllib2
 from cStringIO import StringIO
+
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 DEFAULT_CONFIG_FILE = '/etc/isc-dnsdb-query.conf'
 DEFAULT_DNSDB_SERVER = 'https://dnsdb-api.isc.org'
