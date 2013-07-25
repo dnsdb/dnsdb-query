@@ -28,7 +28,7 @@ try:
 except ImportError:
     import simplejson as json
 
-DEFAULT_CONFIG_FILE = '/etc/isc-dnsdb-query.conf'
+DEFAULT_CONFIG_FILE = '/etc/dnsdb-query.conf'
 DEFAULT_DNSDB_SERVER = 'https://dnsdb-api.isc.org'
 
 cfg = None
@@ -121,7 +121,7 @@ def rdata_to_text(m):
 
 def parse_config(cfg_fname):
     config = {}
-    for fname in (cfg_fname, os.path.expanduser('~/.isc-dnsdb-query.conf')):
+    for fname in (cfg_fname, os.path.expanduser('~/.dnsdb-query.conf')):
         if not os.path.isfile(fname):
             continue
         for line in open(fname):
