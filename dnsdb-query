@@ -28,7 +28,7 @@ if [ -z "$APIKEY" ]; then
 fi
 
 if [ -z "$DNSDB_SERVER" ]; then
-    DNSDB_SERVER="https://dnsdb-api.isc.org"
+    DNSDB_SERVER="https://api.dnsdb.info"
 fi
 
 if [ -z "$CURL" ]; then
