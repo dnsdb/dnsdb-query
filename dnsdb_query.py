@@ -129,7 +129,7 @@ def parse_config(cfg_fname):
             val = val.strip('"')
             config[key] = val
         return config
-    sys.stderr.write('isc_dnsdb_query: unable to open config file\n')
+    sys.stderr.write('dnsdb_query: unable to open config file\n')
     sys.exit(1)
 
 def time_parse(s):
@@ -217,7 +217,7 @@ def main():
     if not 'DNSDB_SERVER' in cfg:
         cfg['DNSDB_SERVER'] = DEFAULT_DNSDB_SERVER
     if not 'APIKEY' in cfg:
-        sys.stderr.write('isc_dnsdb_query: APIKEY not defined in config file\n')
+        sys.stderr.write('dnsdb_query: APIKEY not defined in config file\n')
         sys.exit(1)
 
     client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'], options.limit, options.json)
@@ -242,7 +242,7 @@ def main():
             if not options.sort in res_list[0]:
                 sort_keys = res_list[0].keys()
                 sort_keys.sort()
-                sys.stderr.write('isc_dnsdb_query: invalid sort key "%s". valid sort keys are %s\n' % (options.sort, ', '.join(sort_keys)))
+                sys.stderr.write('dnsdb_query: invalid sort key "%s". valid sort keys are %s\n' % (options.sort, ', '.join(sort_keys)))
                 sys.exit(1)
             res_list.sort(key=lambda r: r[options.sort], reverse=options.reverse)
         if options.before:
