@@ -14,16 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if [ -r "/etc/isc-dnsdb-query.conf" ]; then
-    . /etc/isc-dnsdb-query.conf
+if [ -r "/etc/dnsdb-query.conf" ]; then
+    . /etc/dnsdb-query.conf
 fi
 
-if [ -r "$HOME/.isc-dnsdb-query.conf" ]; then
-    . $HOME/.isc-dnsdb-query.conf
+if [ -r "$HOME/.dnsdb-query.conf" ]; then
+    . $HOME/.dnsdb-query.conf
 fi
 
 if [ -z "$APIKEY" ]; then
-    echo "$(basename $0): APIKEY not defined in /etc/isc-dnsdb-query.conf or $HOME/.isc-dnsdb-query.conf"
+    echo "$(basename $0): APIKEY not defined in /etc/dnsdb-query.conf or $HOME/.dnsdb-query.conf"
     exit 1
 fi
 
