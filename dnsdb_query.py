@@ -29,7 +29,7 @@ except ImportError:
     import simplejson as json
 
 DEFAULT_CONFIG_FILE = '/etc/dnsdb-query.conf'
-DEFAULT_DNSDB_SERVER = 'https://dnsdb-api.isc.org'
+DEFAULT_DNSDB_SERVER = 'https://api.dnsdb.info'
 
 cfg = None
 options = None
