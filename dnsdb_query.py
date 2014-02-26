@@ -31,7 +31,7 @@ try:
 except ImportError:
     import simplejson as json
 
-DEFAULT_CONFIG_FILE = '/etc/dnsdb-query.conf'
+DEFAULT_CONFIG_FILES = filter(os.path.isfile, ('/etc/dnsdb-query.conf', os.path.expanduser('~/.dnsdb-query.conf')))
 DEFAULT_DNSDB_SERVER = 'https://api.dnsdb.info'
 
 cfg = None
@@ -139,10 +139,8 @@ def rrset_to_text(m):
 def rdata_to_text(m):
     return '%s IN %s %s' % (m['rrname'], m['rrtype'], m['rdata'])
 
-def parse_config(cfg_fname):
+def parse_config(cfg_files):
     config = {}
-    cfg_files = filter(os.path.isfile,
-            (cfg_fname, os.path.expanduser('~/.dnsdb-query.conf')))
 
     if not cfg_files:
         raise IOError(errno.ENOENT, 'dnsdb_query: No config files found')
@@ -189,8 +187,8 @@ def main():
     global options
 
     parser = optparse.OptionParser(epilog='Time formats are: "%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%d" (UNIX timestamp), "-%d" (Relative time in seconds), BIND format (e.g. 1w1h, (w)eek, (d)ay, (h)our, (m)inute, (s)econd)')
-    parser.add_option('-c', '--config', dest='config', type='string',
-        help='config file', default=DEFAULT_CONFIG_FILE)
+    parser.add_option('-c', '--config', dest='config', 
+        help='config file', action='append')
     parser.add_option('-r', '--rrset', dest='rrset', type='string',
         help='rrset <ONAME>[/<RRTYPE>[/BAILIWICK]]')
     parser.add_option('-n', '--rdataname', dest='rdata_name', type='string',
@@ -230,11 +228,10 @@ def main():
         print 'Could not parse after: {}'.format(options.after)
 
     try:
-        cfg = parse_config(options.config)
+        cfg = parse_config(options.config or DEFAULT_CONFIG_FILES)
     except IOError, e:
-        sys.stderr.write(e.message)
+        print >>sys.stderr, str(e)
         sys.exit(1)
-
 
     if not 'DNSDB_SERVER' in cfg:
         cfg['DNSDB_SERVER'] = DEFAULT_DNSDB_SERVER
