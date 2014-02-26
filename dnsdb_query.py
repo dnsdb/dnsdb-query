@@ -151,6 +151,8 @@ def time_parse(s):
     except ValueError:
         pass
 
+    raise ValueError, 'Invalid time: "%s"' % s
+
 def filter_before(res_list, before_time):
     before_time = time_parse(before_time)
     new_res_list = []
