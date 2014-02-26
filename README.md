@@ -1,8 +1,10 @@
 dnsdb-query
 ===========
 
-These clients are reference implementations of the DNSDB HTTP API.  Output is
+These clients are reference implementations of the [DNSDB HTTP API](https://api.dnsdb.info/).  Output is
 compliant with the [Passive DNS Common Output Format](http://tools.ietf.org/html/draft-dulaunoy-kaplan-passive-dns-cof-01).
+
+Please see https://www.dnsdb.info/ for more information.
 
 dnsdb-query
 -----------
