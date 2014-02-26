@@ -121,16 +121,19 @@ def rdata_to_text(m):
 
 def parse_config(cfg_fname):
     config = {}
-    for fname in (cfg_fname, os.path.expanduser('~/.dnsdb-query.conf')):
-        if not os.path.isfile(fname):
-            continue
+    cfg_files = filter(os.path.isfile,
+            (cfg_fname, os.path.expanduser('~/.dnsdb-query.conf')))
+
+    if not cfg_files:
+        raise IOError, 2, 'dnsdb_query: No config files found'
+
+    for fname in cfg_files:
         for line in open(fname):
             key, eq, val = line.strip().partition('=')
             val = val.strip('"')
             config[key] = val
-        return config
-    sys.stderr.write('dnsdb_query: unable to open config file\n')
-    sys.exit(1)
+
+    return config
 
 def time_parse(s):
     try:
@@ -212,7 +215,12 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    cfg = parse_config(options.config)
+    try:
+        cfg = parse_config(options.config)
+    except IOError, e:
+        sys.stderr.write(e.message)
+        sys.exit(1)
+
 
     if not 'DNSDB_SERVER' in cfg:
         cfg['DNSDB_SERVER'] = DEFAULT_DNSDB_SERVER
