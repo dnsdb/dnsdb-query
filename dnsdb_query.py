@@ -18,8 +18,10 @@ import calendar
 import locale
 import optparse
 import os
+import re
 import sys
 import time
+import urllib
 import urllib2
 from cStringIO import StringIO
 
@@ -36,6 +38,14 @@ options = None
 
 locale.setlocale(locale.LC_ALL, '')
 
+dns_types = '''
+    A A6 AAAA AFSDB ANY APL ATMA AXFR CAA CDS CERT CNAME DHCID DLV DNAME
+    DNSKEY DS EID GPOS HINFO HIP IPSECKEY ISDN IXFR KEY KX LOC MAILA MAILB
+    MB MD MF MG MINFO MR MX NAPTR NIMLOC NINFO NS NSAP NSAP_PTR NSEC NSEC3
+    NSEC3PARAM NULL NXT OPT PTR PX RKEY RP RRSIG RT SIG SINK SOA SPF SRV
+    SSHFP TA TALINK TKEY TSIG TXT URI WKS X25'''.split()
+rrtype_re = re.compile(r'/(%s)(?:$|/)' % "|".join(dns_types), re.I)
+
 class DnsdbClient(object):
     def __init__(self, server, apikey, limit=None, json=False):
         self.server = server
@@ -47,18 +57,18 @@ class DnsdbClient(object):
         if bailiwick:
             if not rrtype:
                 rrtype = 'ANY'
-            path = 'rrset/name/%s/%s/%s' % (oname, rrtype, bailiwick)
+            path = 'rrset/name/%s/%s/%s' % (quote(oname), rrtype, quote(bailiwick))
         elif rrtype:
-            path = 'rrset/name/%s/%s' % (oname, rrtype)
+            path = 'rrset/name/%s/%s' % (quote(oname), rrtype)
         else:
-            path = 'rrset/name/%s' % oname
+            path = 'rrset/name/%s' % quote(oname)
         return self._query(path)
 
     def query_rdata_name(self, rdata_name, rrtype=None):
         if rrtype:
-            path = 'rdata/name/%s/%s' % (rdata_name, rrtype)
+            path = 'rdata/name/%s/%s' % (quote(rdata_name), rrtype)
         else:
-            path = 'rdata/name/%s' % rdata_name
+            path = 'rdata/name/%s' % quote(rdata_name)
         return self._query(path)
 
     def query_rdata_ip(self, rdata_ip):
@@ -86,6 +96,28 @@ class DnsdbClient(object):
         except urllib2.HTTPError, e:
             sys.stderr.write(str(e) + '\n')
         return res
+
+def split_rrset(rrset):
+    parts = rrtype_re.split(rrset, maxsplit=1)
+    if len(parts) == 1:
+        return (parts[0],None,None)
+    else:
+        parts[1] = parts[1].upper()
+        return parts
+
+def split_rdata(rrset):
+    parts = rrtype_re.split(rrset, maxsplit=1)
+    if parts[2]:
+        raise ValueError, "Invalid rrset: '%s'" % rrset
+
+    if len(parts) == 1:
+        return parts[0],None
+    else:
+        parts[1] = parts[1].upper()
+        return parts[:2]
+
+def quote(path):
+    return urllib.quote(path, safe='')
 
 def sec_to_text(ts):
     return time.strftime('%Y-%m-%d %H:%M:%S -0000', time.gmtime(ts))
@@ -222,10 +254,10 @@ def main():
 
     client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'], options.limit, options.json)
     if options.rrset:
-        res_list = client.query_rrset(*options.rrset.split('/'))
+        res_list = client.query_rrset(*split_rrset(options.rrset))
         fmt_func = rrset_to_text
     elif options.rdata_name:
-        res_list = client.query_rdata_name(*options.rdata_name.split('/'))
+        res_list = client.query_rdata_name(*split_rdata(options.rdata_name))
         fmt_func = rdata_to_text
     elif options.rdata_ip:
         res_list = client.query_rdata_ip(options.rdata_ip)
