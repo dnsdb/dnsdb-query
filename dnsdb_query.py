@@ -37,11 +37,10 @@ options = None
 locale.setlocale(locale.LC_ALL, '')
 
 class DnsdbClient(object):
-    def __init__(self, server, apikey, limit=None, json=False):
+    def __init__(self, server, apikey, limit=None):
         self.server = server
         self.apikey = apikey
         self.limit = limit
-        self.json = json
 
     def query_rrset(self, oname, rrtype=None, bailiwick=None):
         if bailiwick:
@@ -79,10 +78,7 @@ class DnsdbClient(object):
                 line = http.readline()
                 if not line:
                     break
-                if self.json:
-                    res.append(line)
-                else:
-                    res.append(json.loads(line))
+                res.append(json.loads(line))
         except urllib2.HTTPError, e:
             sys.stderr.write(str(e) + '\n')
         return res
@@ -220,7 +216,7 @@ def main():
         sys.stderr.write('dnsdb_query: APIKEY not defined in config file\n')
         sys.exit(1)
 
-    client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'], options.limit, options.json)
+    client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'], options.limit)
     if options.rrset:
         res_list = client.query_rrset(*options.rrset.split('/'))
         fmt_func = rrset_to_text
@@ -235,7 +231,7 @@ def main():
         sys.exit(1)
 
     if options.json:
-        fmt_func = lambda x: x
+        fmt_func = json.dumps
 
     if len(res_list) > 0:
         if options.sort:
@@ -251,9 +247,7 @@ def main():
             res_list = filter_after(res_list, options.after)
 
     for res in res_list:
-        sys.stdout.write(fmt_func(res))
-        if not options.json:
-            sys.stdout.write('\n')
+        sys.stdout.write('%s\n' % fmt_func(res))
 
 if __name__ == '__main__':
     main()
