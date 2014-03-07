@@ -18,7 +18,6 @@ import calendar
 import locale
 import optparse
 import os
-import re
 import sys
 import time
 import urllib
@@ -37,14 +36,6 @@ cfg = None
 options = None
 
 locale.setlocale(locale.LC_ALL, '')
-
-dns_types = '''
-    A A6 AAAA AFSDB ANY APL ATMA AXFR CAA CDS CERT CNAME DHCID DLV DNAME
-    DNSKEY DS EID GPOS HINFO HIP IPSECKEY ISDN IXFR KEY KX LOC MAILA MAILB
-    MB MD MF MG MINFO MR MX NAPTR NIMLOC NINFO NS NSAP NSAP_PTR NSEC NSEC3
-    NSEC3PARAM NULL NXT OPT PTR PX RKEY RP RRSIG RT SIG SINK SOA SPF SRV
-    SSHFP TA TALINK TKEY TSIG TXT URI WKS X25'''.split()
-rrtype_re = re.compile(r'/(%s)(?:$|/)' % "|".join(dns_types), re.I)
 
 class DnsdbClient(object):
     def __init__(self, server, apikey, limit=None, json=False):
@@ -96,25 +87,6 @@ class DnsdbClient(object):
         except urllib2.HTTPError, e:
             sys.stderr.write(str(e) + '\n')
         return res
-
-def split_rrset(rrset):
-    parts = rrtype_re.split(rrset, maxsplit=1)
-    if len(parts) == 1:
-        return (parts[0],None,None)
-    else:
-        parts[1] = parts[1].upper()
-        return parts
-
-def split_rdata(rrset):
-    parts = rrtype_re.split(rrset, maxsplit=1)
-    if parts[2]:
-        raise ValueError, "Invalid rrset: '%s'" % rrset
-
-    if len(parts) == 1:
-        return parts[0],None
-    else:
-        parts[1] = parts[1].upper()
-        return parts[:2]
 
 def quote(path):
     return urllib.quote(path, safe='')
@@ -228,6 +200,10 @@ def main():
         help='rdata name <NAME>[/<RRTYPE>]')
     parser.add_option('-i', '--rdataip', dest='rdata_ip', type='string',
         help='rdata ip <IPADDRESS|IPRANGE|IPNETWORK>')
+    parser.add_option('-t', '--rrtype', dest='rrtype', type='string',
+        help='rrset or rdata rrtype')
+    parser.add_option('-b', '--bailiwick', dest='bailiwick', type='string',
+        help='rrset bailiwick')
     parser.add_option('-s', '--sort', dest='sort', type='string', help='sort key')
     parser.add_option('-R', '--reverse', dest='reverse', action='store_true', default=False,
         help='reverse sort')
@@ -254,10 +230,20 @@ def main():
 
     client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'], options.limit, options.json)
     if options.rrset:
-        res_list = client.query_rrset(*split_rrset(options.rrset))
+        if options.rrtype or options.bailiwick:
+            qargs = (options.rrset, options.rrtype, options.bailiwick)
+        else:
+            qargs = (options.rrset.split('/', 2))
+
+        res_list = client.query_rrset(*qargs)
         fmt_func = rrset_to_text
     elif options.rdata_name:
-        res_list = client.query_rdata_name(*split_rdata(options.rdata_name))
+        if options.rrtype:
+            qargs = (options.rdata_name, options.rrtype, options.bailiwick)
+        else:
+            qargs = (options.rdata_name.split('/', 1))
+
+        res_list = client.query_rdata_name(*qargs)
         fmt_func = rdata_to_text
     elif options.rdata_ip:
         res_list = client.query_rdata_ip(options.rdata_ip)
