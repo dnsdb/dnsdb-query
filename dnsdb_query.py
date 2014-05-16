@@ -79,7 +79,7 @@ class DnsdbClient(object):
                 if not line:
                     break
                 res.append(json.loads(line))
-        except urllib2.HTTPError, e:
+        except (urllib2.HTTPError, urllib2.URLError), e:
             sys.stderr.write(str(e) + '\n')
         return res
 
