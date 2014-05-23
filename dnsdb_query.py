@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import calendar
+import errno
 import locale
 import optparse
 import os
@@ -121,7 +122,7 @@ def parse_config(cfg_fname):
             (cfg_fname, os.path.expanduser('~/.dnsdb-query.conf')))
 
     if not cfg_files:
-        raise IOError, 2, 'dnsdb_query: No config files found'
+        raise IOError(errno.ENOENT, 'dnsdb_query: No config files found')
 
     for fname in cfg_files:
         for line in open(fname):
@@ -150,7 +151,7 @@ def time_parse(s):
     except ValueError:
         pass
 
-    raise ValueError, 'Invalid time: "%s"' % s
+    raise ValueError('Invalid time: "%s"' % s)
 
 def filter_before(res_list, before_time):
     before_time = time_parse(before_time)
