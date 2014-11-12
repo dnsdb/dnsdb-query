@@ -43,7 +43,7 @@ class DnsdbClient(object):
         self.apikey = apikey
         self.limit = limit
 
-    def query_rrset(self, oname, rrtype=None, bailiwick=None):
+    def query_rrset(self, oname, rrtype=None, bailiwick=None, before=None, after=None):
         if bailiwick:
             if not rrtype:
                 rrtype = 'ANY'
@@ -52,24 +52,33 @@ class DnsdbClient(object):
             path = 'rrset/name/%s/%s' % (oname, rrtype)
         else:
             path = 'rrset/name/%s' % oname
-        return self._query(path)
+        return self._query(path, before, after)
 
-    def query_rdata_name(self, rdata_name, rrtype=None):
+    def query_rdata_name(self, rdata_name, rrtype=None, before=None, after=None):
         if rrtype:
             path = 'rdata/name/%s/%s' % (rdata_name, rrtype)
         else:
             path = 'rdata/name/%s' % rdata_name
-        return self._query(path)
+        return self._query(path, before, after)
 
-    def query_rdata_ip(self, rdata_ip):
+    def query_rdata_ip(self, rdata_ip, before=None, after=None):
         path = 'rdata/ip/%s' % rdata_ip.replace('/', ',')
-        return self._query(path)
+        return self._query(path, before, after)
 
-    def _query(self, path):
+    def _query(self, path, before=None, after=None):
         res = []
         url = '%s/lookup/%s' % (self.server, path)
+
+        params = []
         if self.limit:
-            url += '?limit=%d' % self.limit
+            params.append('limit=%d' % self.limit)
+        if before:
+            params.append('time_first_before=%d' % before)
+        if after:
+            params.append('time_last_after=%d' % after)
+        if params:
+            url += '?{}'.format('&'.join(params))
+
         req = urllib2.Request(url)
         req.add_header('Accept', 'application/json')
         req.add_header('X-Api-Key', self.apikey)
@@ -153,38 +162,6 @@ def time_parse(s):
 
     raise ValueError('Invalid time: "%s"' % s)
 
-def filter_before(res_list, before_time):
-    before_time = time_parse(before_time)
-    new_res_list = []
-
-    for res in res_list:
-        if 'time_first' in res:
-            if res['time_first'] < before_time:
-                new_res_list.append(res)
-        elif 'zone_time_first' in res:
-            if res['zone_time_first'] < before_time:
-                new_res_list.append(res)
-        else:
-            new_res_list.append(res)
-
-    return new_res_list
-
-def filter_after(res_list, after_time):
-    after_time = time_parse(after_time)
-    new_res_list = []
-
-    for res in res_list:
-        if 'time_last' in res:
-            if res['time_last'] > after_time:
-                new_res_list.append(res)
-        elif 'zone_time_last' in res:
-            if res['zone_time_last'] > after_time:
-                new_res_list.append(res)
-        else:
-            new_res_list.append(res)
-
-    return new_res_list
-
 def main():
     global cfg
     global options
@@ -215,6 +192,18 @@ def main():
         sys.exit(1)
 
     try:
+        if options.before:
+            options.before = time_parse(options.before)
+    except ValueError, e:
+        print 'Could not parse before: {}'.format(options.before)
+
+    try:
+        if options.after:
+            options.after = time_parse(options.after)
+    except ValueError, e:
+        print 'Could not parse after: {}'.format(options.after)
+
+    try:
         cfg = parse_config(options.config)
     except IOError, e:
         sys.stderr.write(e.message)
@@ -229,13 +218,13 @@ def main():
 
     client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'], options.limit)
     if options.rrset:
-        res_list = client.query_rrset(*options.rrset.split('/'))
+        res_list = client.query_rrset(*options.rrset.split('/'), before=options.before, after=options.after)
         fmt_func = rrset_to_text
     elif options.rdata_name:
-        res_list = client.query_rdata_name(*options.rdata_name.split('/'))
+        res_list = client.query_rdata_name(*options.rdata_name.split('/'), before=options.before, after=options.after)
         fmt_func = rdata_to_text
     elif options.rdata_ip:
-        res_list = client.query_rdata_ip(options.rdata_ip)
+        res_list = client.query_rdata_ip(options.rdata_ip, before=options.before, after=options.after)
         fmt_func = rdata_to_text
     else:
         parser.print_help()
@@ -252,11 +241,6 @@ def main():
                 sys.stderr.write('dnsdb_query: invalid sort key "%s". valid sort keys are %s\n' % (options.sort, ', '.join(sort_keys)))
                 sys.exit(1)
             res_list.sort(key=lambda r: r[options.sort], reverse=options.reverse)
-        if options.before:
-            res_list = filter_before(res_list, options.before)
-        if options.after:
-            res_list = filter_after(res_list, options.after)
-
     for res in res_list:
         sys.stdout.write('%s\n' % fmt_func(res))
 
