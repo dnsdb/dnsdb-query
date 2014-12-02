@@ -72,10 +72,14 @@ class DnsdbClient(object):
         params = []
         if self.limit:
             params.append('limit=%d' % self.limit)
-        if before:
-            params.append('time_first_before=%d' % before)
-        if after:
-            params.append('time_last_after=%d' % after)
+        if before and after:
+            params.append('time_first_after=%d' % after)
+            params.append('time_last_before=%d' % before)
+        else:
+            if before:
+                params.append('time_first_before=%d' % before)
+            if after:
+                params.append('time_last_after=%d' % after)
         if params:
             url += '?{}'.format('&'.join(params))
 
