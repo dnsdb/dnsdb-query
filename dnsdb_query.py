@@ -19,6 +19,7 @@ import errno
 import locale
 import optparse
 import os
+import re
 import sys
 import time
 import urllib2
@@ -163,6 +164,14 @@ def time_parse(s):
         return epoch
     except ValueError:
         pass
+
+    m = re.match(r'^(?=\d)(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$', s, re.I)
+    if m:
+        return -1*(int(m.group(1) or 0)*604800 +  \
+                int(m.group(2) or 0)*86400+  \
+                int(m.group(3) or 0)*3600+  \
+                int(m.group(4) or 0)*60+  \
+                int(m.group(5) or 0))
 
     raise ValueError('Invalid time: "%s"' % s)
 
