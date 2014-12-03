@@ -81,7 +81,7 @@ class DnsdbClient(object):
             if after:
                 params.append('time_last_after=%d' % after)
         if params:
-            url += '?{}'.format('&'.join(params))
+            url += '?{0}'.format('&'.join(params))
 
         req = urllib2.Request(url)
         req.add_header('Accept', 'application/json')
