@@ -179,7 +179,7 @@ def main():
     global cfg
     global options
 
-    parser = optparse.OptionParser()
+    parser = optparse.OptionParser(epilog='Time formats are: "%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%d" (UNIX timestamp), "-%d" (Relative time in seconds), BIND format (e.g. 1w1h, (w)eek, (d)ay, (h)our, (m)inute, (s)econd)')
     parser.add_option('-c', '--config', dest='config', type='string',
         help='config file', default=DEFAULT_CONFIG_FILE)
     parser.add_option('-r', '--rrset', dest='rrset', type='string',
