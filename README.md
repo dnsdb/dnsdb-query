@@ -79,6 +79,10 @@ Options:
                         limit number of results
   --before=BEFORE       only output results seen before this time
   --after=AFTER         only output results seen after this time
+
+Time formats are: "%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%d" (UNIX timestamp),
+"-%d" (Relative time in seconds), BIND format relative timestamp (e.g. 1w1h,
+(w)eek, (d)ay, (h)our, (m)inute, (s)econd)
 ```
 
 Or, from Python:
