@@ -93,10 +93,9 @@ class DnsdbClient(object):
                 line = http.readline()
                 if not line:
                     break
-                res.append(json.loads(line))
+                yield json.loads(line)
         except (urllib2.HTTPError, urllib2.URLError), e:
             sys.stderr.write(str(e) + '\n')
-        return res
 
 def sec_to_text(ts):
     return time.strftime('%Y-%m-%d %H:%M:%S -0000', time.gmtime(ts))
@@ -231,13 +230,13 @@ def main():
 
     client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'], options.limit)
     if options.rrset:
-        res_list = client.query_rrset(*options.rrset.split('/'), before=options.before, after=options.after)
+        results = client.query_rrset(*options.rrset.split('/'), before=options.before, after=options.after)
         fmt_func = rrset_to_text
     elif options.rdata_name:
-        res_list = client.query_rdata_name(*options.rdata_name.split('/'), before=options.before, after=options.after)
+        results = client.query_rdata_name(*options.rdata_name.split('/'), before=options.before, after=options.after)
         fmt_func = rdata_to_text
     elif options.rdata_ip:
-        res_list = client.query_rdata_ip(options.rdata_ip, before=options.before, after=options.after)
+        results = client.query_rdata_ip(options.rdata_ip, before=options.before, after=options.after)
         fmt_func = rdata_to_text
     else:
         parser.print_help()
@@ -246,15 +245,16 @@ def main():
     if options.json:
         fmt_func = json.dumps
 
-    if len(res_list) > 0:
-        if options.sort:
-            if not options.sort in res_list[0]:
-                sort_keys = res_list[0].keys()
+    if options.sort:
+        results = list(results)
+        if len(results) > 0:
+            if not options.sort in results[0]:
+                sort_keys = results[0].keys()
                 sort_keys.sort()
                 sys.stderr.write('dnsdb_query: invalid sort key "%s". valid sort keys are %s\n' % (options.sort, ', '.join(sort_keys)))
                 sys.exit(1)
-            res_list.sort(key=lambda r: r[options.sort], reverse=options.reverse)
-    for res in res_list:
+            results.sort(key=lambda r: r[options.sort], reverse=options.reverse)
+    for res in results:
         sys.stdout.write('%s\n' % fmt_func(res))
 
 if __name__ == '__main__':
