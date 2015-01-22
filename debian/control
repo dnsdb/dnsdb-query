@@ -1,0 +1,30 @@
+Source: dnsdb-query
+Section: utils
+Priority: extra
+Maintainer: Farsight Security, Inc. <software@farsightsecurity.com>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.5
+
+Package: dnsdb-query
+Section: utils
+Architecture: all
+Depends: ${misc:Depends}, python2.7, curl
+Description: Reference implementations of DNSDB clients.
+ dnsdb-query is a simple curl-based wrapper for the DNSDB HTTP API.
+ .
+ dnsdb_query.py is a more advanced Python client for the DNSDB HTTP API. It is
+ similar to the dnsdb-query shell script but supports some additional features
+ like sorting and setting the result limit parameter. It is also embeddable as
+ a Python module.
+ .
+ The scripts source the config file /etc/dnsdb-query.conf as a shell fragment.
+ If the config file is not present in /etc, the file $HOME/.dnsdb-query.conf
+ is sourced instead.
+ .
+ The config file MUST set the value of the APIKEY shell variable to the API
+ key provided to you by Farsight Security.
+ .
+ For example, if your API key is d41d8cd98f00b204e9800998ecf8427e, place the
+ following line in /etc/dnsdb-query.conf or $HOME/.dnsdb-query.conf:
+ . 
+ APIKEY="d41d8cd98f00b204e9800998ecf8427e"

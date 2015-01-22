@@ -1,0 +1,5 @@
+dnsdb-query (0.1-1) debian-fsi; urgency=medium
+
+  * Initial release.
+
+ -- Henry Stern <stern@fsi.io>  Thu, 22 Jan 2015 11:01:30 -0400

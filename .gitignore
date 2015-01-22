@@ -1,0 +1,6 @@
+debian/*.debhelper.log
+debian/*.substvars
+debian/dnsdb-query/
+debian/files
+.*.swp
+*.pyc
