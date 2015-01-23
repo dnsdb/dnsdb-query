@@ -22,6 +22,7 @@ import os
 import re
 import sys
 import time
+import urllib
 import urllib2
 from cStringIO import StringIO
 
@@ -38,6 +39,9 @@ options = None
 
 locale.setlocale(locale.LC_ALL, '')
 
+class QueryError(Exception):
+    pass
+
 class DnsdbClient(object):
     def __init__(self, server, apikey, limit=None):
         self.server = server
@@ -48,18 +52,18 @@ class DnsdbClient(object):
         if bailiwick:
             if not rrtype:
                 rrtype = 'ANY'
-            path = 'rrset/name/%s/%s/%s' % (oname, rrtype, bailiwick)
+            path = 'rrset/name/%s/%s/%s' % (quote(oname), rrtype, quote(bailiwick))
         elif rrtype:
-            path = 'rrset/name/%s/%s' % (oname, rrtype)
+            path = 'rrset/name/%s/%s' % (quote(oname), rrtype)
         else:
-            path = 'rrset/name/%s' % oname
+            path = 'rrset/name/%s' % quote(oname)
         return self._query(path, before, after)
 
     def query_rdata_name(self, rdata_name, rrtype=None, before=None, after=None):
         if rrtype:
-            path = 'rdata/name/%s/%s' % (rdata_name, rrtype)
+            path = 'rdata/name/%s/%s' % (quote(rdata_name), rrtype)
         else:
-            path = 'rdata/name/%s' % rdata_name
+            path = 'rdata/name/%s' % quote(rdata_name)
         return self._query(path, before, after)
 
     def query_rdata_ip(self, rdata_ip, before=None, after=None):
@@ -70,19 +74,19 @@ class DnsdbClient(object):
         res = []
         url = '%s/lookup/%s' % (self.server, path)
 
-        params = []
+        params = {}
         if self.limit:
-            params.append('limit=%d' % self.limit)
+            params['limit'] = self.limit
         if before and after:
-            params.append('time_first_after=%d' % after)
-            params.append('time_last_before=%d' % before)
+            params['time_first_after'] = after
+            params['time_last_before'] = before
         else:
             if before:
-                params.append('time_first_before=%d' % before)
+                params['time_first_before'] = before
             if after:
-                params.append('time_last_after=%d' % after)
+                params['time_last_after'] = after
         if params:
-            url += '?{0}'.format('&'.join(params))
+            url += '?{0}'.format(urllib.urlencode(params))
 
         req = urllib2.Request(url)
         req.add_header('Accept', 'application/json')
@@ -95,7 +99,10 @@ class DnsdbClient(object):
                     break
                 yield json.loads(line)
         except (urllib2.HTTPError, urllib2.URLError), e:
-            sys.stderr.write(str(e) + '\n')
+            raise QueryError, str(e), sys.exc_traceback
+
+def quote(path):
+    return urllib.quote(path, safe='')
 
 def sec_to_text(ts):
     return time.strftime('%Y-%m-%d %H:%M:%S -0000', time.gmtime(ts))
@@ -187,6 +194,10 @@ def main():
         help='rdata name <NAME>[/<RRTYPE>]')
     parser.add_option('-i', '--rdataip', dest='rdata_ip', type='string',
         help='rdata ip <IPADDRESS|IPRANGE|IPNETWORK>')
+    parser.add_option('-t', '--rrtype', dest='rrtype', type='string',
+        help='rrset or rdata rrtype')
+    parser.add_option('-b', '--bailiwick', dest='bailiwick', type='string',
+        help='rrset bailiwick')
     parser.add_option('-s', '--sort', dest='sort', type='string', help='sort key')
     parser.add_option('-R', '--reverse', dest='reverse', action='store_true', default=False,
         help='reverse sort')
@@ -230,10 +241,20 @@ def main():
 
     client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'], options.limit)
     if options.rrset:
-        results = client.query_rrset(*options.rrset.split('/'), before=options.before, after=options.after)
+        if options.rrtype or options.bailiwick:
+            qargs = (options.rrset, options.rrtype, options.bailiwick)
+        else:
+            qargs = (options.rrset.split('/', 2))
+
+        results = client.query_rrset(*qargs, before=options.before, after=options.after)
         fmt_func = rrset_to_text
     elif options.rdata_name:
-        results = client.query_rdata_name(*options.rdata_name.split('/'), before=options.before, after=options.after)
+        if options.rrtype:
+            qargs = (options.rdata_name, options.rrtype, options.bailiwick)
+        else:
+            qargs = (options.rdata_name.split('/', 1))
+
+        results = client.query_rdata_name(*qargs, before=options.before, after=options.after)
         fmt_func = rdata_to_text
     elif options.rdata_ip:
         results = client.query_rdata_ip(options.rdata_ip, before=options.before, after=options.after)
@@ -245,17 +266,21 @@ def main():
     if options.json:
         fmt_func = json.dumps
 
-    if options.sort:
-        results = list(results)
-        if len(results) > 0:
-            if not options.sort in results[0]:
-                sort_keys = results[0].keys()
-                sort_keys.sort()
-                sys.stderr.write('dnsdb_query: invalid sort key "%s". valid sort keys are %s\n' % (options.sort, ', '.join(sort_keys)))
-                sys.exit(1)
-            results.sort(key=lambda r: r[options.sort], reverse=options.reverse)
-    for res in results:
-        sys.stdout.write('%s\n' % fmt_func(res))
+    try:
+        if options.sort:
+            results = list(results)
+            if len(results) > 0:
+                if not options.sort in results[0]:
+                    sort_keys = results[0].keys()
+                    sort_keys.sort()
+                    sys.stderr.write('dnsdb_query: invalid sort key "%s". valid sort keys are %s\n' % (options.sort, ', '.join(sort_keys)))
+                    sys.exit(1)
+                results.sort(key=lambda r: r[options.sort], reverse=options.reverse)
+        for res in results:
+            sys.stdout.write('%s\n' % fmt_func(res))
+    except QueryError, e:
+        print >>sys.stderr, e.message
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()
