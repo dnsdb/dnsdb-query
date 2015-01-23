@@ -52,18 +52,18 @@ class DnsdbClient(object):
         if bailiwick:
             if not rrtype:
                 rrtype = 'ANY'
-            path = 'rrset/name/%s/%s/%s' % (oname, rrtype, bailiwick)
+            path = 'rrset/name/%s/%s/%s' % (quote(oname), rrtype, quote(bailiwick))
         elif rrtype:
-            path = 'rrset/name/%s/%s' % (oname, rrtype)
+            path = 'rrset/name/%s/%s' % (quote(oname), rrtype)
         else:
-            path = 'rrset/name/%s' % oname
+            path = 'rrset/name/%s' % quote(oname)
         return self._query(path, before, after)
 
     def query_rdata_name(self, rdata_name, rrtype=None, before=None, after=None):
         if rrtype:
-            path = 'rdata/name/%s/%s' % (rdata_name, rrtype)
+            path = 'rdata/name/%s/%s' % (quote(rdata_name), rrtype)
         else:
-            path = 'rdata/name/%s' % rdata_name
+            path = 'rdata/name/%s' % quote(rdata_name)
         return self._query(path, before, after)
 
     def query_rdata_ip(self, rdata_ip, before=None, after=None):
@@ -100,6 +100,9 @@ class DnsdbClient(object):
                 yield json.loads(line)
         except (urllib2.HTTPError, urllib2.URLError), e:
             raise QueryError, str(e), sys.exc_traceback
+
+def quote(path):
+    return urllib.quote(path, safe='')
 
 def sec_to_text(ts):
     return time.strftime('%Y-%m-%d %H:%M:%S -0000', time.gmtime(ts))
@@ -191,6 +194,10 @@ def main():
         help='rdata name <NAME>[/<RRTYPE>]')
     parser.add_option('-i', '--rdataip', dest='rdata_ip', type='string',
         help='rdata ip <IPADDRESS|IPRANGE|IPNETWORK>')
+    parser.add_option('-t', '--rrtype', dest='rrtype', type='string',
+        help='rrset or rdata rrtype')
+    parser.add_option('-b', '--bailiwick', dest='bailiwick', type='string',
+        help='rrset bailiwick')
     parser.add_option('-s', '--sort', dest='sort', type='string', help='sort key')
     parser.add_option('-R', '--reverse', dest='reverse', action='store_true', default=False,
         help='reverse sort')
@@ -234,10 +241,20 @@ def main():
 
     client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'], options.limit)
     if options.rrset:
-        results = client.query_rrset(*options.rrset.split('/'), before=options.before, after=options.after)
+        if options.rrtype or options.bailiwick:
+            qargs = (options.rrset, options.rrtype, options.bailiwick)
+        else:
+            qargs = (options.rrset.split('/', 2))
+
+        results = client.query_rrset(*qargs, before=options.before, after=options.after)
         fmt_func = rrset_to_text
     elif options.rdata_name:
-        results = client.query_rdata_name(*options.rdata_name.split('/'), before=options.before, after=options.after)
+        if options.rrtype:
+            qargs = (options.rdata_name, options.rrtype, options.bailiwick)
+        else:
+            qargs = (options.rdata_name.split('/', 1))
+
+        results = client.query_rdata_name(*qargs, before=options.before, after=options.after)
         fmt_func = rdata_to_text
     elif options.rdata_ip:
         results = client.query_rdata_ip(options.rdata_ip, before=options.before, after=options.after)
