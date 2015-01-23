@@ -22,6 +22,7 @@ import os
 import re
 import sys
 import time
+import urllib
 import urllib2
 from cStringIO import StringIO
 
@@ -70,19 +71,19 @@ class DnsdbClient(object):
         res = []
         url = '%s/lookup/%s' % (self.server, path)
 
-        params = []
+        params = {}
         if self.limit:
-            params.append('limit=%d' % self.limit)
+            params['limit'] = self.limit
         if before and after:
-            params.append('time_first_after=%d' % after)
-            params.append('time_last_before=%d' % before)
+            params['time_first_after'] = after
+            params['time_last_before'] = before
         else:
             if before:
-                params.append('time_first_before=%d' % before)
+                params['time_first_before'] = before
             if after:
-                params.append('time_last_after=%d' % after)
+                params['time_last_after'] = after
         if params:
-            url += '?{0}'.format('&'.join(params))
+            url += '?{0}'.format(urllib.urlencode(params))
 
         req = urllib2.Request(url)
         req.add_header('Accept', 'application/json')
