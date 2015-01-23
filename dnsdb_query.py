@@ -39,6 +39,9 @@ options = None
 
 locale.setlocale(locale.LC_ALL, '')
 
+class QueryError(Exception):
+    pass
+
 class DnsdbClient(object):
     def __init__(self, server, apikey, limit=None):
         self.server = server
@@ -96,7 +99,7 @@ class DnsdbClient(object):
                     break
                 yield json.loads(line)
         except (urllib2.HTTPError, urllib2.URLError), e:
-            sys.stderr.write(str(e) + '\n')
+            raise QueryError, str(e), sys.exc_traceback
 
 def sec_to_text(ts):
     return time.strftime('%Y-%m-%d %H:%M:%S -0000', time.gmtime(ts))
@@ -246,17 +249,21 @@ def main():
     if options.json:
         fmt_func = json.dumps
 
-    if options.sort:
-        results = list(results)
-        if len(results) > 0:
-            if not options.sort in results[0]:
-                sort_keys = results[0].keys()
-                sort_keys.sort()
-                sys.stderr.write('dnsdb_query: invalid sort key "%s". valid sort keys are %s\n' % (options.sort, ', '.join(sort_keys)))
-                sys.exit(1)
-            results.sort(key=lambda r: r[options.sort], reverse=options.reverse)
-    for res in results:
-        sys.stdout.write('%s\n' % fmt_func(res))
+    try:
+        if options.sort:
+            results = list(results)
+            if len(results) > 0:
+                if not options.sort in results[0]:
+                    sort_keys = results[0].keys()
+                    sort_keys.sort()
+                    sys.stderr.write('dnsdb_query: invalid sort key "%s". valid sort keys are %s\n' % (options.sort, ', '.join(sort_keys)))
+                    sys.exit(1)
+                results.sort(key=lambda r: r[options.sort], reverse=options.reverse)
+        for res in results:
+            sys.stdout.write('%s\n' % fmt_func(res))
+    except QueryError, e:
+        print >>sys.stderr, e.message
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()
