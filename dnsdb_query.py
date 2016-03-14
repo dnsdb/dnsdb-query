@@ -110,28 +110,31 @@ def sec_to_text(ts):
 def rrset_to_text(m):
     s = StringIO()
 
-    if 'bailiwick' in m:
-        s.write(';;  bailiwick: %s\n' % m['bailiwick'])
+    try:
+        if 'bailiwick' in m:
+            s.write(';;  bailiwick: %s\n' % m['bailiwick'])
 
-    if 'count' in m:
-        s.write(';;      count: %s\n' % locale.format('%d', m['count'], True))
+        if 'count' in m:
+            s.write(';;      count: %s\n' % locale.format('%d', m['count'], True))
 
-    if 'time_first' in m:
-        s.write(';; first seen: %s\n' % sec_to_text(m['time_first']))
-    if 'time_last' in m:
-        s.write(';;  last seen: %s\n' % sec_to_text(m['time_last']))
+        if 'time_first' in m:
+            s.write(';; first seen: %s\n' % sec_to_text(m['time_first']))
+        if 'time_last' in m:
+            s.write(';;  last seen: %s\n' % sec_to_text(m['time_last']))
 
-    if 'zone_time_first' in m:
-        s.write(';; first seen in zone file: %s\n' % sec_to_text(m['zone_time_first']))
-    if 'zone_time_last' in m:
-        s.write(';;  last seen in zone file: %s\n' % sec_to_text(m['zone_time_last']))
+        if 'zone_time_first' in m:
+            s.write(';; first seen in zone file: %s\n' % sec_to_text(m['zone_time_first']))
+        if 'zone_time_last' in m:
+            s.write(';;  last seen in zone file: %s\n' % sec_to_text(m['zone_time_last']))
 
-    if 'rdata' in m:
-        for rdata in m['rdata']:
-            s.write('%s IN %s %s\n' % (m['rrname'], m['rrtype'], rdata))
+        if 'rdata' in m:
+            for rdata in m['rdata']:
+                s.write('%s IN %s %s\n' % (m['rrname'], m['rrtype'], rdata))
 
-    s.seek(0)
-    return s.read()
+        s.seek(0)
+        return s.read()
+    finally:
+        s.close()
 
 def rdata_to_text(m):
     return '%s IN %s %s' % (m['rrname'], m['rrtype'], m['rdata'])
