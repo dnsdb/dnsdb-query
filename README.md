@@ -6,6 +6,50 @@ compliant with the [Passive DNS Common Output Format](http://tools.ietf.org/html
 
 Please see https://www.dnsdb.info/ for more information.
 
+Requirements
+------------
+ * Linux, BSD, OS X
+ * Curl
+ * Python 2.7.x
+ * Farsight DNSDB API key
+
+Installation
+------------
+1. Create a directory
+
+  ```
+  mkdir ~/dnsdb
+  ```
+1. Download the scripts in tar.gz file
+
+  ```
+  curl https://codeload.github.com/dnsdb/dnsdb-query/tar.gz/debian/0.2-1 -o ~/dnsdb/0.2-1.tar.gz
+  ```
+1. Extract the scripts
+
+  ```
+  tar xzvf ~/dnsdb/0.2-1.tar.gz -C ~/dnsdb/ --strip-components=1
+  ```
+1. Create a API key file
+
+  ```
+  nano ~/.dnsdb-query.conf
+  ```
+1. Create the following
+
+   ```
+   APIKEY="<apikey>"
+   ```
+1. Test the Python script
+
+  ```
+  $ python dnsdb/dnsdb_query.py -i 104.244.13.104
+  ```
+  ```
+  ...
+  www.farsighsecurity.com. IN A 104.244.13.104
+  ```
+
 dnsdb-query
 -----------
 
