@@ -35,7 +35,7 @@ Installation
   ```
   nano ~/.dnsdb-query.conf
   ```
-1. Create the following
+1. Cut and paste the following and replace '\<apikey\>' with your API Key
 
    ```
    APIKEY="<apikey>"
