@@ -20,7 +20,7 @@ Installation
   ```
   mkdir ~/dnsdb
   ```
-1. Download the clients in tar.gz file
+1. Download the software
 
   ```
   curl https://codeload.github.com/dnsdb/dnsdb-query/tar.gz/debian/0.2-1 -o ~/dnsdb/0.2-1.tar.gz
