@@ -47,7 +47,7 @@ Installation
   ```
   ```
   ...
-  www.farsighsecurity.com. IN A 104.244.13.104
+  www.farsightsecurity.com. IN A 104.244.13.104
   ```
 
 dnsdb_query.py
