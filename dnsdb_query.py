@@ -189,8 +189,9 @@ def sigpipe_wrapper(func):
         try:
             return func(*args, **kwargs)
         except IOError as e:
-            if e.errno != errno.EPIPE:
-                raise
+            if e.errno == errno.EPIPE:
+                sys.exit(e.errno)
+            raise
     return f
 
 @sigpipe_wrapper
