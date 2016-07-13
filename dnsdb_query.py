@@ -184,6 +184,17 @@ def time_parse(s):
 
     raise ValueError('Invalid time: "%s"' % s)
 
+def epipe_wrapper(func):
+    def f(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except IOError as e:
+            if e.errno == errno.EPIPE:
+                sys.exit(e.errno)
+            raise
+    return f
+
+@epipe_wrapper
 def main():
     global cfg
     global options
