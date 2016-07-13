@@ -184,7 +184,7 @@ def time_parse(s):
 
     raise ValueError('Invalid time: "%s"' % s)
 
-def sigpipe_wrapper(func):
+def epipe_wrapper(func):
     def f(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -194,7 +194,7 @@ def sigpipe_wrapper(func):
             raise
     return f
 
-@sigpipe_wrapper
+@epipe_wrapper
 def main():
     global cfg
     global options
