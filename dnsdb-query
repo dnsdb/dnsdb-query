@@ -39,6 +39,8 @@ if [ -z "$DNSDB_FORMAT" ]; then
     DNSDB_FORMAT="text"
 fi
 
+export HTTP_PROXY HTTPS_PROXY
+
 case "$DNSDB_FORMAT" in
     json)
         ACCEPT="application/json"

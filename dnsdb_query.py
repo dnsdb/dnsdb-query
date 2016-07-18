@@ -33,6 +33,8 @@ except ImportError:
 
 DEFAULT_CONFIG_FILE = '/etc/dnsdb-query.conf'
 DEFAULT_DNSDB_SERVER = 'https://api.dnsdb.info'
+DEFAULT_HTTP_PROXY = ''
+DEFAULT_HTTPS_PROXY = ''
 
 cfg = None
 options = None
@@ -43,10 +45,12 @@ class QueryError(Exception):
     pass
 
 class DnsdbClient(object):
-    def __init__(self, server, apikey, limit=None):
+    def __init__(self, server, apikey, limit=None, http_proxy=None, https_proxy=None):
         self.server = server
         self.apikey = apikey
         self.limit = limit
+        self.http_proxy = http_proxy
+        self.https_proxy = https_proxy
 
     def query_rrset(self, oname, rrtype=None, bailiwick=None, before=None, after=None):
         if bailiwick:
@@ -91,8 +95,17 @@ class DnsdbClient(object):
         req = urllib2.Request(url)
         req.add_header('Accept', 'application/json')
         req.add_header('X-Api-Key', self.apikey)
+
+        proxy_args = {}
+        if self.http_proxy:
+            proxy_args['http'] = self.http_proxy
+        if self.https_proxy:
+            proxy_args['https'] = self.https_proxy
+        proxy_handler = urllib2.ProxyHandler(proxy_args)
+        opener = urllib2.build_opener(proxy_handler)
+
         try:
-            http = urllib2.urlopen(req)
+            http = opener.open(req)
             while True:
                 line = http.readline()
                 if not line:
@@ -238,11 +251,18 @@ def main():
 
     if not 'DNSDB_SERVER' in cfg:
         cfg['DNSDB_SERVER'] = DEFAULT_DNSDB_SERVER
+    if not 'HTTP_PROXY' in cfg:
+        cfg['HTTP_PROXY'] = DEFAULT_HTTP_PROXY
+    if not 'HTTPS_PROXY' in cfg:
+        cfg['HTTPS_PROXY'] = DEFAULT_HTTPS_PROXY
     if not 'APIKEY' in cfg:
         sys.stderr.write('dnsdb_query: APIKEY not defined in config file\n')
         sys.exit(1)
 
-    client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'], options.limit)
+    client = DnsdbClient(cfg['DNSDB_SERVER'], cfg['APIKEY'],
+            limit=options.limit,
+            http_proxy=cfg['HTTP_PROXY'],
+            https_proxy=cfg['HTTPS_PROXY'])
     if options.rrset:
         if options.rrtype or options.bailiwick:
             qargs = (options.rrset, options.rrtype, options.bailiwick)
