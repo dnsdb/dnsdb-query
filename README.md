@@ -98,6 +98,18 @@ for rrset in client.query_rrset('www.dnsdb.info'):
     print repr(rrset)
 ```
 
+Other configuration options that may be set:
+
+`DNSDB_SERVER`
+The base URL of the DNSDB HTTP API, minus the /lookup component. Defaults to
+`https://api.dnsdb.info.`
+
+`HTTP_PROXY`
+The URL of the HTTP proxy that you wish to use.
+
+`HTTPS_PROXY`
+The URL of the HTTPS proxy that you wish to use.
+
 dnsdb-query
 -----------
 
@@ -120,12 +132,18 @@ APIKEY="d41d8cd98f00b204e9800998ecf8427e"
 Other shell variables that may be set via the config file or command line
 are:
 
-DNSDB_SERVER
+`DNSDB_SERVER`
 The base URL of the DNSDB HTTP API, minus the /lookup component. Defaults to
 `https://api.dnsdb.info.`
 
-DNSDB_FORMAT
+`DNSDB_FORMAT`
 The result format to use, either text or json. Defaults to text.
+
+`HTTP_PROXY`
+The URL of the HTTP proxy that you wish to use.
+
+`HTTPS_PROXY`
+The URL of the HTTPS proxy that you wish to use.
 
 dnsdb-query supports the following usages:
 
