@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import print_function
 
 import calendar
 import errno
@@ -22,14 +23,16 @@ import os
 import re
 import sys
 import time
-import urllib
-import urllib2
-from cStringIO import StringIO
+import json
+from io import StringIO
 
 try:
-    import json
+    from urllib2 import build_opener, Request, ProxyHandler, HTTPError, URLError
+    from urllib import quote as urllib_quote, urlencode
 except ImportError:
-    import simplejson as json
+    from urllib.request import build_opener, Request, ProxyHandler, HTTPError, URLError
+    from urllib.parse import quote as urllib_quote, urlencode
+
 
 DEFAULT_CONFIG_FILES = filter(os.path.isfile, ('/etc/dnsdb-query.conf', os.path.expanduser('~/.dnsdb-query.conf')))
 DEFAULT_DNSDB_SERVER = 'https://api.dnsdb.info'
@@ -90,9 +93,9 @@ class DnsdbClient(object):
             if after:
                 params['time_last_after'] = after
         if params:
-            url += '?{0}'.format(urllib.urlencode(params))
+            url += '?{0}'.format(urlencode(params))
 
-        req = urllib2.Request(url)
+        req = Request(url)
         req.add_header('Accept', 'application/json')
         req.add_header('X-Api-Key', self.apikey)
 
@@ -101,8 +104,8 @@ class DnsdbClient(object):
             proxy_args['http'] = self.http_proxy
         if self.https_proxy:
             proxy_args['https'] = self.https_proxy
-        proxy_handler = urllib2.ProxyHandler(proxy_args)
-        opener = urllib2.build_opener(proxy_handler)
+        proxy_handler = ProxyHandler(proxy_args)
+        opener = build_opener(proxy_handler)
 
         try:
             http = opener.open(req)
@@ -110,12 +113,12 @@ class DnsdbClient(object):
                 line = http.readline()
                 if not line:
                     break
-                yield json.loads(line)
-        except (urllib2.HTTPError, urllib2.URLError), e:
-            raise QueryError, str(e), sys.exc_traceback
+                yield json.loads(line.decode('ascii'))
+        except (HTTPError, URLError) as e:
+            raise QueryError(str(e), sys.exc_traceback)
 
 def quote(path):
-    return urllib.quote(path, safe='')
+    return urllib_quote(path, safe='')
 
 def sec_to_text(ts):
     return time.strftime('%Y-%m-%d %H:%M:%S -0000', time.gmtime(ts))
@@ -187,10 +190,10 @@ def time_parse(s):
 
     m = re.match(r'^(?=\d)(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$', s, re.I)
     if m:
-        return -1*(int(m.group(1) or 0)*604800 +  \
-                int(m.group(2) or 0)*86400+  \
-                int(m.group(3) or 0)*3600+  \
-                int(m.group(4) or 0)*60+  \
+        return -1*(int(m.group(1) or 0)*604800 +
+                int(m.group(2) or 0)*86400+
+                int(m.group(3) or 0)*3600+
+                int(m.group(4) or 0)*60+
                 int(m.group(5) or 0))
 
     raise ValueError('Invalid time: "%s"' % s)
@@ -242,19 +245,19 @@ def main():
     try:
         if options.before:
             options.before = time_parse(options.before)
-    except ValueError, e:
-        print 'Could not parse before: {}'.format(options.before)
+    except ValueError:
+        print('Could not parse before: {}'.format(options.before))
 
     try:
         if options.after:
             options.after = time_parse(options.after)
-    except ValueError, e:
-        print 'Could not parse after: {}'.format(options.after)
+    except ValueError:
+        print('Could not parse after: {}'.format(options.after))
 
     try:
         cfg = parse_config(options.config or DEFAULT_CONFIG_FILES)
-    except IOError, e:
-        print >>sys.stderr, str(e)
+    except IOError as e:
+        print(str(e), file=sys.stderr)
         sys.exit(1)
 
     if not 'DNSDB_SERVER' in cfg:
@@ -309,8 +312,8 @@ def main():
                 results.sort(key=lambda r: r[options.sort], reverse=options.reverse)
         for res in results:
             sys.stdout.write('%s\n' % fmt_func(res))
-    except QueryError, e:
-        print >>sys.stderr, e.message
+    except QueryError as e:
+        print(e.message, file=sys.stderr)
         sys.exit(1)
 
 if __name__ == '__main__':
