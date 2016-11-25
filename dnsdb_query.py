@@ -23,7 +23,6 @@ import os
 import re
 import sys
 import time
-import json
 from io import StringIO
 
 try:
@@ -33,6 +32,10 @@ except ImportError:
     from urllib.request import build_opener, Request, ProxyHandler, HTTPError, URLError
     from urllib.parse import quote as urllib_quote, urlencode
 
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 DEFAULT_CONFIG_FILES = filter(os.path.isfile, ('/etc/dnsdb-query.conf', os.path.expanduser('~/.dnsdb-query.conf')))
 DEFAULT_DNSDB_SERVER = 'https://api.dnsdb.info'
