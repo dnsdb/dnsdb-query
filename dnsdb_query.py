@@ -287,7 +287,7 @@ def main():
         fmt_func = rrset_to_text
     elif options.rdata_name:
         if options.rrtype:
-            qargs = (options.rdata_name, options.rrtype, options.bailiwick)
+            qargs = (options.rdata_name, options.rrtype)
         else:
             qargs = (options.rdata_name.split('/', 1))
 
