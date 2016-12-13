@@ -10,7 +10,7 @@ Requirements
 ------------
  * Linux, BSD, OS X
  * Curl
- * Python 2.7.x or Python 3
+ * Python 2.7.x
  * Farsight DNSDB API key
 
 Installation
