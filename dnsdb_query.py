@@ -38,6 +38,7 @@ DEFAULT_HTTPS_PROXY = ''
 
 cfg = None
 options = None
+debug = False	# set to True to print raw queries and responses
 
 locale.setlocale(locale.LC_ALL, '')
 
@@ -104,12 +105,17 @@ class DnsdbClient(object):
         proxy_handler = urllib2.ProxyHandler(proxy_args)
         opener = urllib2.build_opener(proxy_handler)
 
+        if debug:
+            print >>sys.stderr, ";; query URL =", url
+
         try:
             http = opener.open(req)
             while True:
                 line = http.readline()
                 if not line:
                     break
+                if debug:
+                    print >>sys.stderr, ";; response =", line.strip()
                 yield json.loads(line)
         except (urllib2.HTTPError, urllib2.URLError), e:
             raise QueryError, str(e), sys.exc_traceback
@@ -209,6 +215,7 @@ def epipe_wrapper(func):
 def main():
     global cfg
     global options
+    global debug
 
     parser = optparse.OptionParser(epilog='Time formats are: "%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%d" (UNIX timestamp), "-%d" (Relative time in seconds), BIND format (e.g. 1w1h, (w)eek, (d)ay, (h)our, (m)inute, (s)econd)')
     parser.add_option('-c', '--config', dest='config', 
@@ -230,6 +237,8 @@ def main():
         help='output in JSON format')
     parser.add_option('-l', '--limit', dest='limit', type='int', default=0,
         help='limit number of results')
+    parser.add_option('-d', '--debug', dest='debug', action='store_true', default=False,
+                      help='print debug output')
 
     parser.add_option('', '--before', dest='before', type='string', help='only output results seen before this time')
     parser.add_option('', '--after', dest='after', type='string', help='only output results seen after this time')
@@ -238,6 +247,8 @@ def main():
     if args:
         parser.print_help()
         sys.exit(1)
+
+    debug = options.debug
 
     try:
         if options.before:

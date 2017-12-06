@@ -76,6 +76,8 @@ Options:
   -j, --json            output in JSON format
   -l LIMIT, --limit=LIMIT
                         limit number of results
+  -d, --debug           print debug output
+
   --before=BEFORE       only output results seen before this time
   --after=AFTER         only output results seen after this time
 
