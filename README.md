@@ -159,6 +159,6 @@ Usage: dnsdb-query rdata raw <HEX>[/<RRTYPE>]
 If your rrname, bailiwick or rdata contains the `/` character you
 will need to escape it to `%2F` on the command line.  eg:
 
-`./dnsdb_query -r 1.0%2F1.0.168.192.in-addr.arpa`
-	
+`./dnsdb_query.py -r 1.0%2F1.0.168.192.in-addr.arpa`
+
 retrieves the rrsets for `1.0/1.0.168.192.in-addr.arpa`.
