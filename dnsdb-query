@@ -70,7 +70,7 @@ case "$1" in
         if [ -z "$oname" ]; then
             usage
         fi
-        $CURL -Ss -H "X-API-Key: ${APIKEY}" -H "Accept: ${ACCEPT}" ${DNSDB_RRSET_LOOKUP}/name/$oname
+        $CURL --path-as-is -Ss -H "X-API-Key: ${APIKEY}" -H "Accept: ${ACCEPT}" ${DNSDB_RRSET_LOOKUP}/name/$oname
         ;;
 
     rdata)
@@ -86,7 +86,7 @@ case "$1" in
         esac
         case "$lookup_type" in
             ip|name|raw)
-                $CURL -Ss -H "X-API-Key: ${APIKEY}" -H "Accept: ${ACCEPT}" ${DNSDB_RDATA_LOOKUP}/$lookup_type/$rdata
+                $CURL --path-as-is -Ss -H "X-API-Key: ${APIKEY}" -H "Accept: ${ACCEPT}" ${DNSDB_RDATA_LOOKUP}/$lookup_type/$rdata
                 ;;
             *)
                 usage
