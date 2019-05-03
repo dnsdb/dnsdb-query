@@ -55,7 +55,8 @@ debug = False  # set to True to print raw queries and responses
 
 locale.setlocale(locale.LC_ALL, '')
 
-logger = logging.getLogger(__name__)
+logging.basicConfig()
+logger = logging.getLogger(sys.argv[0])
 
 
 class QueryError(Exception):
@@ -139,7 +140,7 @@ class DnsdbClient(object):
                     logger.debug(";; response ={0}".format(line.strip()))
                 yield json.loads(line)
         except (HTTPError, URLError) as e:
-            raise(QueryError, str(e), sys.exc_traceback)
+            raise QueryError(str(e), sys.exc_info()[2])
 
 
 def quote(path):
@@ -325,36 +326,36 @@ def main():
                          limit=options.limit,
                          http_proxy=cfg['HTTP_PROXY'],
                          https_proxy=cfg['HTTPS_PROXY'])
-    if options.rrset:
-        if options.rrtype or options.bailiwick:
-            qargs = (options.rrset, options.rrtype, options.bailiwick)
-        else:
-            qargs = (options.rrset.split('/', 2))
-
-        results = client.query_rrset(*qargs, before=options.before,
-                                     after=options.after)
-        fmt_func = rrset_to_text
-    elif options.rdata_name:
-        if options.rrtype:
-            qargs = (options.rdata_name, options.rrtype)
-        else:
-            qargs = (options.rdata_name.split('/', 1))
-
-        results = client.query_rdata_name(*qargs, before=options.before,
-                                          after=options.after)
-        fmt_func = rdata_to_text
-    elif options.rdata_ip:
-        results = client.query_rdata_ip(options.rdata_ip, before=options.before,
-                                        after=options.after)
-        fmt_func = rdata_to_text
-    else:
-        parser.print_help()
-        sys.exit(1)
-
-    if options.json:
-        fmt_func = json.dumps
-
     try:
+        if options.rrset:
+            if options.rrtype or options.bailiwick:
+                qargs = (options.rrset, options.rrtype, options.bailiwick)
+            else:
+                qargs = (options.rrset.split('/', 2))
+
+            results = client.query_rrset(*qargs, before=options.before,
+                                         after=options.after)
+            fmt_func = rrset_to_text
+        elif options.rdata_name:
+            if options.rrtype:
+                qargs = (options.rdata_name, options.rrtype)
+            else:
+                qargs = (options.rdata_name.split('/', 1))
+
+            results = client.query_rdata_name(*qargs, before=options.before,
+                                              after=options.after)
+            fmt_func = rdata_to_text
+        elif options.rdata_ip:
+            results = client.query_rdata_ip(options.rdata_ip, before=options.before,
+                                            after=options.after)
+            fmt_func = rdata_to_text
+        else:
+            parser.print_help()
+            sys.exit(1)
+
+        if options.json:
+            fmt_func = json.dumps
+
         if options.sort:
             results = list(results)
             if len(results) > 0:
