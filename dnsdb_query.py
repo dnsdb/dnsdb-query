@@ -143,7 +143,7 @@ class DnsdbClient(object):
 
 
 def quote(path):
-    return quote(path, safe='')
+    return quote(path, '')
 
 
 def sec_to_text(ts):
