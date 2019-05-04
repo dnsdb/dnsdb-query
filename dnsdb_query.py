@@ -159,8 +159,9 @@ def rrset_to_text(m):
             s.write(';;  bailiwick: %s\n' % m['bailiwick'])
 
         if 'count' in m:
-            s.write(';;      count: %s\n' % locale.format('%d', m['count'],
-                                                          True))
+            s.write(';;      count: %s\n' % locale.format_string('%d',
+                                                                 m['count'],
+                                                                 True))
 
         if 'time_first' in m:
             s.write(';; first seen: %s\n' % sec_to_text(m['time_first']))
