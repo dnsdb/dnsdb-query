@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function, unicode_literals
+
 import logging
 import calendar
 import errno
@@ -33,14 +35,11 @@ try:
 except ImportError:
     from urllib2 import Request, ProxyHandler, build_opener, HTTPError, \
         URLError
-try:
-    from io import StringIO
-except ImportError:
-    from io import BytesIO as StringIO
-try:
-    import json
-except ImportError:
-    import simplejson as json
+
+from io import StringIO
+
+
+import json
 
 DEFAULT_CONFIG_FILES = filter(os.path.isfile,
                               ('/etc/dnsdb-query.conf',
