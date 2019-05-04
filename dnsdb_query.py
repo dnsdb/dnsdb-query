@@ -77,20 +77,20 @@ class DnsdbClient(object):
         if bailiwick:
             if not rrtype:
                 rrtype = 'ANY'
-            path = 'rrset/name/%s/%s/%s' % (quote(oname), rrtype,
-                                            quote(bailiwick))
+            path = 'rrset/name/%s/%s/%s' % (_quote(oname), rrtype,
+                                            _quote(bailiwick))
         elif rrtype:
-            path = 'rrset/name/%s/%s' % (quote(oname), rrtype)
+            path = 'rrset/name/%s/%s' % (_quote(oname), rrtype)
         else:
-            path = 'rrset/name/%s' % quote(oname)
+            path = 'rrset/name/%s' % _quote(oname)
         return self._query(path, before, after)
 
     def query_rdata_name(self, rdata_name, rrtype=None, before=None,
                          after=None):
         if rrtype:
-            path = 'rdata/name/%s/%s' % (quote(rdata_name), rrtype)
+            path = 'rdata/name/%s/%s' % (_quote(rdata_name), rrtype)
         else:
-            path = 'rdata/name/%s' % quote(rdata_name)
+            path = 'rdata/name/%s' % _quote(rdata_name)
         return self._query(path, before, after)
 
     def query_rdata_ip(self, rdata_ip, before=None, after=None):
@@ -143,7 +143,7 @@ class DnsdbClient(object):
             raise QueryError(str(e), sys.exc_info()[2])
 
 
-def quote(path):
+def _quote(path):
     return quote(path, '')
 
 
