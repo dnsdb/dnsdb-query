@@ -36,7 +36,7 @@ except ImportError:
 try:
     from io import StringIO
 except ImportError:
-    from cStringIO import StringIO
+    from io import BytesIO as StringIO
 try:
     import json
 except ImportError:
