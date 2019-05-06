@@ -137,7 +137,10 @@ class DnsdbClient(object):
                 if debug:
                     logger.setLevel(logging.DEBUG)
                     logger.debug(";; response ={0}".format(line.strip()))
-                yield json.loads(line)
+                try:
+                    yield json.loads(line.decode('ascii'))
+                except AttributeError:
+                    yield json.loads(line)
         except (HTTPError, URLError) as e:
             raise QueryError(str(e), sys.exc_info()[2])
 
