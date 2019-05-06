@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function, unicode_literals
+
 import logging
 import calendar
 import errno
@@ -33,14 +35,11 @@ try:
 except ImportError:
     from urllib2 import Request, ProxyHandler, build_opener, HTTPError, \
         URLError
-try:
-    from io import StringIO
-except ImportError:
-    from cStringIO import StringIO
-try:
-    import json
-except ImportError:
-    import simplejson as json
+
+from io import StringIO
+
+
+import json
 
 DEFAULT_CONFIG_FILES = filter(os.path.isfile,
                               ('/etc/dnsdb-query.conf',
@@ -77,20 +76,20 @@ class DnsdbClient(object):
         if bailiwick:
             if not rrtype:
                 rrtype = 'ANY'
-            path = 'rrset/name/%s/%s/%s' % (quote(oname), rrtype,
-                                            quote(bailiwick))
+            path = 'rrset/name/%s/%s/%s' % (_quote(oname), rrtype,
+                                            _quote(bailiwick))
         elif rrtype:
-            path = 'rrset/name/%s/%s' % (quote(oname), rrtype)
+            path = 'rrset/name/%s/%s' % (_quote(oname), rrtype)
         else:
-            path = 'rrset/name/%s' % quote(oname)
+            path = 'rrset/name/%s' % _quote(oname)
         return self._query(path, before, after)
 
     def query_rdata_name(self, rdata_name, rrtype=None, before=None,
                          after=None):
         if rrtype:
-            path = 'rdata/name/%s/%s' % (quote(rdata_name), rrtype)
+            path = 'rdata/name/%s/%s' % (_quote(rdata_name), rrtype)
         else:
-            path = 'rdata/name/%s' % quote(rdata_name)
+            path = 'rdata/name/%s' % _quote(rdata_name)
         return self._query(path, before, after)
 
     def query_rdata_ip(self, rdata_ip, before=None, after=None):
@@ -138,12 +137,15 @@ class DnsdbClient(object):
                 if debug:
                     logger.setLevel(logging.DEBUG)
                     logger.debug(";; response ={0}".format(line.strip()))
-                yield json.loads(line)
+                try:
+                    yield json.loads(line.decode('ascii'))
+                except AttributeError:
+                    yield json.loads(line)
         except (HTTPError, URLError) as e:
             raise QueryError(str(e), sys.exc_info()[2])
 
 
-def quote(path):
+def _quote(path):
     return quote(path, '')
 
 
@@ -159,8 +161,9 @@ def rrset_to_text(m):
             s.write(';;  bailiwick: %s\n' % m['bailiwick'])
 
         if 'count' in m:
-            s.write(';;      count: %s\n' % locale.format('%d', m['count'],
-                                                          True))
+            s.write(';;      count: %s\n' % locale.format_string('%d',
+                                                                 m['count'],
+                                                                 True))
 
         if 'time_first' in m:
             s.write(';; first seen: %s\n' % sec_to_text(m['time_first']))
